@@ -6,7 +6,8 @@
       "mcp__claude_ai_TogetherWecan__describe_table",
       "mcp__claude_ai_TogetherWecan__run_query",
       "mcp__claude_ai_Google_Calendar__list_events",
-      "mcp__claude_ai_Gmail__search_threads"
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__claude_ai_TogetherWecan__list_tables"
     ]
   }
 }

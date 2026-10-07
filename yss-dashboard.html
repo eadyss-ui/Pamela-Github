@@ -1,0 +1,664 @@
+<title>YSS Sir's Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap">
+<style>
+/* Layout: an executive's morning desk. Today strip (calendar + reminders) on top, then Sales, Collections, Tickets as full-width bands. */
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --ink: #111a2e;
+  --ink-2: #4a5468;
+  --muted: #7d8697;
+  --line: #e2e5ec;
+  --navy: #14284b;
+  --gold: #a87a1f;
+  --gold-soft: #f6efe0;
+  --chip: #eef0f4;
+  --s1: #2a78d6;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s8: #e34948;
+  --nofs: #c3c2b7;
+  --good: #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+  --crit-text: #b02a2a;
+  --good-text: #006300;
+  --focus: #2a78d6;
+  --display: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1220; --panel: #171c2c; --ink: #f2f4f8; --ink-2: #c0c6d4; --muted: #8b93a5;
+    --line: #2a3145; --navy: #9fb6e0; --gold: #d9ad55; --gold-soft: #2c2616; --chip: #232a3d;
+    --s1: #3987e5; --s3: #199e70; --s4: #c98500; --s8: #e66767; --nofs: #4a4a46;
+    --crit-text: #e66767; --good-text: #0ca30c; --focus: #6da7ec;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1220; --panel: #171c2c; --ink: #f2f4f8; --ink-2: #c0c6d4; --muted: #8b93a5;
+  --line: #2a3145; --navy: #9fb6e0; --gold: #d9ad55; --gold-soft: #2c2616; --chip: #232a3d;
+  --s1: #3987e5; --s3: #199e70; --s4: #c98500; --s8: #e66767; --nofs: #4a4a46;
+  --crit-text: #e66767; --good-text: #0ca30c; --focus: #6da7ec;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--body); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: 26px; font-weight: 700; color: var(--navy); letter-spacing: -0.01em; }
+h2 { font-size: 18px; font-weight: 600; }
+h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); }
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--gold); padding-bottom: 12px; }
+.top .sub { color: var(--ink-2); margin-top: 2px; }
+.top .right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, .btn {
+  font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--navy); color: var(--panel); border-color: var(--navy); }
+.band { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 16px; min-width: 0; }
+.band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.asof { color: var(--muted); font-size: 12px; }
+.asof.stale { color: var(--crit-text); }
+.today { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; }
+@media (max-width: 880px) { .today { grid-template-columns: 1fr; } }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { border-left: 3px solid var(--gold); padding: 2px 0 2px 12px; min-width: 0; }
+.kpi .k { font-size: 12px; color: var(--ink-2); }
+.kpi .v { font: 700 24px var(--display); font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid2 > * { min-width: 0; }
+@media (max-width: 880px) { .grid2 { grid-template-columns: 1fr; } }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+svg text { fill: var(--muted); font: 11px var(--body); }
+svg .lbl { fill: var(--ink-2); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
+td { border-bottom: 1px solid var(--line); padding: 7px 8px; vertical-align: top; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-flex; gap: 6px; align-items: center; padding: 1px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.late { color: var(--crit-text); font-weight: 600; }
+.note { font-size: 12px; color: var(--muted); }
+.state { padding: 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--ink-2); font-size: 13px; }
+.state.err { border-color: var(--crit); }
+/* calendar */
+.daytabs { display: flex; gap: 6px; }
+.events { display: grid; gap: 8px; }
+.ev { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.ev.now { border-color: var(--gold); background: var(--gold-soft); }
+.ev.past { opacity: 0.6; }
+.ev .t { font: 600 14px var(--display); font-variant-numeric: tabular-nums; color: var(--navy); }
+.ev .t small { display: block; font: 12px var(--body); color: var(--muted); }
+.ev .title { font-weight: 600; }
+.ev .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.ev a { color: var(--s1); }
+/* reminders */
+.rem-form { display: grid; grid-template-columns: 1fr 150px auto; gap: 8px; }
+@media (max-width: 520px) { .rem-form { grid-template-columns: 1fr 1fr; } .rem-form input[type=text] { grid-column: 1 / -1; } }
+input[type=text], input[type=date] {
+  font: 14px var(--body); padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink); min-width: 0;
+}
+.rem-group { display: grid; gap: 4px; }
+.rem { display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px; align-items: center; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.rem input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
+.rem.done .txt { text-decoration: line-through; color: var(--muted); }
+.rem .due { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.rem .due.over { color: var(--crit-text); font-weight: 600; }
+.rem .del { border: none; background: none; color: var(--muted); padding: 2px 6px; font-size: 16px; line-height: 1; }
+.rem .del.confirm { color: var(--crit-text); font-size: 12px; font-weight: 600; }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); max-width: 240px; }
+@media (prefers-reduced-motion: no-preference) { .ev, .rem { transition: background 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="hello">YSS Sir's Desk</h1>
+      <div class="sub" id="todayLine">Executive Director · Alcove Realty</div>
+    </div>
+    <div class="right">
+      <button type="button" id="refreshAll">Refresh data</button>
+    </div>
+  </header>
+
+  <section class="today">
+    <div class="band" aria-labelledby="calH">
+      <div class="band-head">
+        <h2 id="calH">Calendar</h2>
+        <div class="daytabs" role="group" aria-label="Day">
+          <button type="button" id="dayToday" aria-pressed="true">Today</button>
+          <button type="button" id="dayTomorrow" aria-pressed="false">Tomorrow</button>
+        </div>
+      </div>
+      <div id="calBody" class="events"><div class="state">Loading sir's calendar (yss@alcoverealty.in)…</div></div>
+      <div class="asof" id="calAsof"></div>
+    </div>
+
+    <div class="band" aria-labelledby="remH">
+      <div class="band-head">
+        <h2 id="remH">Reminders</h2>
+        <span class="asof" id="remCount"></span>
+      </div>
+      <form class="rem-form" id="remForm" autocomplete="off">
+        <input type="text" id="remText" placeholder="Add a reminder for sir…" maxlength="200" aria-label="Reminder">
+        <input type="date" id="remDue" aria-label="Due date">
+        <button type="submit" id="remAdd">Add</button>
+      </form>
+      <div id="remBody"><div class="state">Loading reminders…</div></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="salesH">
+    <div class="band-head">
+      <h2 id="salesH">Sales &amp; inventory · New Kolkata Sangam</h2>
+      <span class="asof" id="salesAsof"></span>
+    </div>
+    <div class="kpis" id="salesKpis"></div>
+    <div class="grid2">
+      <div>
+        <h3>Bookings by month</h3>
+        <div class="legend" style="margin-block: 6px;">
+          <span><i class="sw" style="background:var(--s1)"></i>Booked</span>
+          <span><i class="sw" style="background:var(--s8)"></i>Cancelled</span>
+        </div>
+        <div id="monthChart"></div>
+        <p class="note">Gross bookings by booking date above the line, cancellations by cancellation date below it.</p>
+      </div>
+      <div>
+        <h3>Inventory by tower</h3>
+        <div class="legend" style="margin-block: 6px;">
+          <span><i class="sw" style="background:var(--s1)"></i>Sold</span>
+          <span><i class="sw" style="background:var(--s3)"></i>Available</span>
+          <span><i class="sw" style="background:var(--s4)"></i>On hold</span>
+          <span><i class="sw" style="background:var(--nofs)"></i>Not open for sale</span>
+        </div>
+        <div id="invChart"></div>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:6px;">Latest bookings</h3>
+      <div class="scroll" id="recentTbl"></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="collH">
+    <div class="band-head">
+      <h2 id="collH">Collections</h2>
+      <span class="asof" id="collAsof"></span>
+    </div>
+    <div class="kpis" id="collKpis"></div>
+    <div class="grid2">
+      <div>
+        <h3>Daily receipts · last 30 days of data</h3>
+        <div id="dayChart" style="margin-top:8px;"></div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:6px;">Not yet cleared</h3>
+        <div class="scroll" id="unclTbl"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="tixH">
+    <div class="band-head">
+      <h2 id="tixH">Open support tickets</h2>
+      <div class="daytabs" role="group" aria-label="Ticket filter">
+        <button type="button" id="tixTeam" aria-pressed="true">Sir's team</button>
+        <button type="button" id="tixAll" aria-pressed="false">All open</button>
+      </div>
+    </div>
+    <div class="kpis" id="tixKpis"></div>
+    <div class="scroll" id="tixTbl"><div class="state">Loading tickets…</div></div>
+    <p class="note">"Overdue" compares against the current agreed date (after extensions), not the original due date. Sir's team = people whose reporting manager is YSS sir in the employee master.</p>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+  const DBSRV = "TogetherWecan";
+  const CALSRV = "Google Calendar";
+  const CAL_ID = "yss@alcoverealty.in";
+  const SIR_CODES = ["AR000979", "AR000166", "AR000975"];
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v) => (v == null || v === "" ? 0 : Number(v));
+
+  // ---- IST time helpers ----
+  const istParts = (d = new Date()) => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(d).map((x) => [x.type, x.value]));
+    return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+  };
+  const nowIST = () => { const p = istParts(); return p.date + "T" + p.time; };
+  const todayIST = () => istParts().date;
+  const addDays = (ymd, n) => { const d = new Date(ymd + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const fmtDay = (ymd) => new Date(ymd + "T00:00:00Z").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  const fmtDT = (s) => { if (!s) return "—"; const [d, t] = String(s).split("T"); return fmtDay(d) + (t ? ", " + t.slice(0, 5) : ""); };
+  const daysBetween = (a, b) => Math.round((new Date(b.slice(0, 10) + "T00:00:00Z") - new Date(a.slice(0, 10) + "T00:00:00Z")) / 864e5);
+  const monthName = (ym) => new Date(ym + "-01T00:00:00Z").toLocaleDateString("en-IN", { month: "short", timeZone: "UTC" });
+
+  function inr(v) {
+    v = num(v);
+    if (!v) return "₹0";
+    if (Math.abs(v) >= 1e7) return "₹" + (v / 1e7).toFixed(2) + " Cr";
+    if (Math.abs(v) >= 1e5) return "₹" + (v / 1e5).toFixed(1) + " L";
+    return "₹" + Math.round(v).toLocaleString("en-IN");
+  }
+
+  // ---- header ----
+  const hr = Number(istParts().time.slice(0, 2));
+  $("hello").textContent = (hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening") + ", YSS sir";
+  $("todayLine").textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" }) + " · Executive Director, Alcove Realty";
+
+  // ---- tooltip ----
+  const tip = $("tip");
+  function bindTips(root) {
+    root.addEventListener("mousemove", (e) => {
+      const el = e.target.closest("[data-tip]");
+      if (!el) { tip.hidden = true; return; }
+      tip.innerHTML = el.getAttribute("data-tip");
+      tip.hidden = false;
+      tip.style.left = Math.min(e.clientX + 12, window.innerWidth - 250) + "px";
+      tip.style.top = e.clientY + 14 + "px";
+    });
+    root.addEventListener("mouseleave", () => { tip.hidden = true; });
+  }
+
+  // ---- connector error copy ----
+  function errText(err, server) {
+    const code = err && err.code;
+    switch (code) {
+      case "needs_reauth": return `${server} needs to be reconnected. Open claude.ai Settings → Connectors and reconnect it, then reload.`;
+      case "server_not_connected":
+      case "server_not_found": return `${server} isn't connected for you. Add it in claude.ai Settings → Connectors, then reload.`;
+      case "selection_required": return `You have more than one ${server} connector. Choose one in the prompt above the page.`;
+      case "not_in_manifest":
+      case "consent_required": return `${server} isn't allowed for this page. Allow it from the page's Permissions menu to see this section.`;
+      case "blocked_by_policy":
+      case "approval_required": return `Your organisation's policy blocks ${server} here.`;
+      case "server_unavailable": return `${server} didn't respond. Try Refresh data in a minute.`;
+      case "tool_error": return `${server} returned an error: ${err.message || "unknown"}`;
+      case "not_granted":
+      case "capability_disabled":
+      case "capability_removed": return "Live data isn't available in this view. Open the dashboard on claude.ai while signed in.";
+      default: return `Couldn't load from ${server}${err && err.message ? ": " + err.message : "."}`;
+    }
+  }
+  const showErr = (id, err, server) => { $(id).innerHTML = `<div class="state err">${esc(errText(err, server))}</div>`; };
+
+  // ---- data plumbing ----
+  let mcp = null;
+  const unsubs = [];
+  const SQL = {
+    fresh: ["alcove_sales", "SELECT (SELECT MAX(last_synced_at) FROM sales_booking) AS sales_synced, (SELECT MAX(booking_date) FROM sales_booking) AS last_booking, (SELECT MAX(uploaded_at) FROM collection_receipts) AS coll_uploaded, (SELECT MAX(receipt_date) FROM collection_receipts) AS last_receipt"],
+    inv: ["alcove_sales", "SELECT tower, SUM(derived_status='Sold') AS sold, SUM(derived_status='Available') AS avail, SUM(derived_status='On Hold') AS hold, SUM(derived_status='Not Open for Sale') AS nofs, SUM(CASE WHEN derived_status='Sold' THEN sold_consideration ELSE 0 END) AS sold_val, SUM(CASE WHEN derived_status='Available' THEN list_consideration ELSE 0 END) AS avail_val FROM v_flat_current_status GROUP BY tower"],
+    cats: ["alcove_sales", "SELECT REPLACE(tower,'Tower ','') AS tower, UPPER(tower_category) AS cat, COUNT(*) AS n FROM sales_booking GROUP BY tower, cat"],
+    monthly: ["alcove_sales", "SELECT DATE_FORMAT(booking_date,'%Y-%m') AS ym, UPPER(tower_category) AS cat, COUNT(*) AS n, SUM(total_consideration) AS val FROM sales_booking WHERE booking_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 11 MONTH),'%Y-%m-01') GROUP BY ym, cat"],
+    canc: ["alcove_sales", "SELECT DATE_FORMAT(cancellation_date,'%Y-%m') AS ym, COUNT(*) AS n FROM booking_cancellation WHERE is_reversal = 0 AND cancellation_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 11 MONTH),'%Y-%m-01') GROUP BY ym"],
+    recent: ["alcove_sales", "SELECT booking_date, tower, unit, UPPER(tower_category) AS cat, total_consideration, booking_agency FROM sales_booking ORDER BY booking_date DESC, id DESC LIMIT 8"],
+    targets: ["alcove_sales", "SELECT year, month, lot, target FROM sales_targets ORDER BY year DESC, month DESC"],
+    collM: ["alcove_sales", "SELECT DATE_FORMAT(receipt_date,'%Y-%m') AS ym, COUNT(*) AS n, SUM(cheque_amt) AS amt, SUM(CASE WHEN reco_status <> 'cleared' THEN cheque_amt ELSE 0 END) AS uncl_amt, SUM(reco_status <> 'cleared') AS uncl_n FROM collection_receipts GROUP BY ym ORDER BY ym DESC LIMIT 12"],
+    collD: ["alcove_sales", "SELECT receipt_date AS d, COUNT(*) AS n, SUM(cheque_amt) AS amt FROM collection_receipts WHERE receipt_date >= DATE_SUB((SELECT MAX(receipt_date) FROM collection_receipts), INTERVAL 29 DAY) GROUP BY receipt_date ORDER BY receipt_date"],
+    collUn: ["alcove_sales", "SELECT receipt_date, project, building, unit, cheque_amt, reco_status, sale_status FROM collection_receipts WHERE reco_status <> 'cleared' ORDER BY receipt_date DESC LIMIT 25"],
+    tickets: ["alcovedb_2024", "SELECT id, task_name, raiser_name, raiser_emp_code, solver_name, solver_emp_code, status, submitted_date, complete_date, new_complete_date, extension_count FROM support_tickets WHERE status IN ('Pending','Revision') ORDER BY COALESCE(new_complete_date, complete_date) LIMIT 300"],
+    team: ["alcovedb_2024", "SELECT Emp_Code FROM Employee_Master WHERE HOD_ID IN ('AR000979','AR000166','AR000975') AND STATUS <> 'INACTIVE'"]
+  };
+  const data = {};
+  const stamps = {};
+  const errs = {};
+  const SECTIONS = {
+    sales: ["fresh", "inv", "cats", "monthly", "canc", "recent", "targets"],
+    coll: ["fresh", "collM", "collD", "collUn"],
+    tix: ["tickets", "team"]
+  };
+  const rowsOf = (payload) => (payload && Array.isArray(payload.rows) ? payload.rows : []);
+
+  function watchSql(key) {
+    const [database, sql] = SQL[key];
+    const un = mcp.watchTool(DBSRV, "run_query", { database, sql, format: "json" }, (ev) => {
+      if (ev.type === "data") {
+        data[key] = rowsOf(ev.result.payload);
+        stamps[key] = ev.result.cache ? ev.result.cache.storedAt : Date.now();
+        delete errs[key];
+      } else {
+        const c = ev.error && ev.error.code;
+        errs[key] = ev.error;
+        if (["needs_reauth", "server_not_connected", "blocked_by_policy", "approval_required", "not_in_manifest", "consent_required"].includes(c)) delete data[key];
+      }
+      scheduleRender();
+    }, { cache: { staleTime: 60000, gcTime: 6 * 3600000 }, refetchInterval: 15 * 60000 });
+    unsubs.push(un);
+  }
+
+  let pending = false;
+  function scheduleRender() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(() => { pending = false; renderSales(); renderColl(); renderTix(); });
+  }
+
+  const sectionErr = (sec) => SECTIONS[sec].map((k) => errs[k]).find(Boolean);
+  const sectionReady = (sec) => SECTIONS[sec].every((k) => data[k]);
+  const fetchedAt = (sec) => {
+    const t = Math.min(...SECTIONS[sec].map((k) => stamps[k] || Infinity));
+    return isFinite(t) ? new Date(t).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "";
+  };
+
+  // ---- SALES ----
+  function renderSales() {
+    const e = sectionErr("sales");
+    if (!sectionReady("sales")) {
+      const msg = e ? `<div class="state err">${esc(errText(e, DBSRV))}</div>` : `<div class="state">Loading sales data…</div>`;
+      $("salesKpis").innerHTML = msg; return;
+    }
+    const f = data.fresh[0] || {};
+    const syncDays = f.sales_synced ? daysBetween(f.sales_synced, nowIST()) : null;
+    $("salesAsof").className = "asof" + (syncDays > 2 ? " stale" : "");
+    $("salesAsof").textContent = `Booking data synced ${fmtDT(f.sales_synced)}${syncDays > 2 ? ` (${syncDays} days ago)` : ""} · fetched ${fetchedAt("sales")}${e ? " · last refresh failed" : ""}`;
+
+    const inv = data.inv.map((r) => ({ tower: String(r.tower).replace("Tower ", ""), sold: num(r.sold), avail: num(r.avail), hold: num(r.hold), nofs: num(r.nofs), soldVal: num(r.sold_val), availVal: num(r.avail_val) }))
+      .sort((a, b) => Number(a.tower) - Number(b.tower));
+    const T = inv.reduce((a, r) => ({ sold: a.sold + r.sold, avail: a.avail + r.avail, hold: a.hold + r.hold, nofs: a.nofs + r.nofs, soldVal: a.soldVal + r.soldVal, availVal: a.availVal + r.availVal }), { sold: 0, avail: 0, hold: 0, nofs: 0, soldVal: 0, availVal: 0 });
+    const totalUnits = T.sold + T.avail + T.hold + T.nofs;
+
+    // category per tower = most frequent
+    const catBest = {};
+    data.cats.forEach((r) => { const t = String(r.tower); if (!r.cat) return; if (!catBest[t] || num(r.n) > catBest[t].n) catBest[t] = { cat: r.cat, n: num(r.n) }; });
+
+    // months
+    const months = []; const t0 = todayIST().slice(0, 7);
+    for (let i = 11; i >= 0; i--) { const d = new Date(t0 + "-01T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - i); months.push(d.toISOString().slice(0, 7)); }
+    const bk = Object.fromEntries(months.map((m) => [m, { n: 0, val: 0, cats: {} }]));
+    data.monthly.forEach((r) => { if (!bk[r.ym]) return; bk[r.ym].n += num(r.n); bk[r.ym].val += num(r.val); const c = r.cat || "OTHER"; bk[r.ym].cats[c] = (bk[r.ym].cats[c] || 0) + num(r.n); });
+    const cn = Object.fromEntries(months.map((m) => [m, 0]));
+    data.canc.forEach((r) => { if (cn[r.ym] != null) cn[r.ym] = num(r.n); });
+
+    const thisM = months[11], lastM = months[10];
+    const tgtRows = data.targets.filter((r) => `${r.year}-${String(r.month).padStart(2, "0")}` === thisM);
+    const tgt = tgtRows.reduce((a, r) => a + num(r.target), 0);
+    const tgtNote = tgtRows.length ? `Target ${tgt} (${tgtRows.map((r) => `${r.lot.replace("_", " ")} ${r.target}`).join(", ")})` : "No target set for this month";
+
+    $("salesKpis").innerHTML = [
+      { k: `Booked in ${monthName(thisM)}`, v: bk[thisM].n, d: tgtNote },
+      { k: `Booked in ${monthName(lastM)}`, v: bk[lastM].n, d: `${inr(bk[lastM].val)} · ${cn[lastM]} cancelled` },
+      { k: "Units sold (current)", v: T.sold.toLocaleString("en-IN"), d: `${Math.round(T.sold / totalUnits * 100)}% of ${totalUnits.toLocaleString("en-IN")} units · ${inr(T.soldVal)}` },
+      { k: "Available to sell", v: T.avail.toLocaleString("en-IN"), d: `List value ${inr(T.availVal)}` },
+      { k: "On hold / not open", v: `${T.hold} / ${T.nofs}`, d: "Units on hold · not open for sale" }
+    ].map((x) => `<div class="kpi"><div class="k">${esc(x.k)}</div><div class="v">${esc(x.v)}</div><div class="d">${esc(x.d)}</div></div>`).join("");
+
+    // month chart (diverging bars, one axis = units)
+    const W = 560, H = 230, padL = 30, padR = 8, top = 14, bottom = 26;
+    const maxUp = Math.max(5, ...months.map((m) => bk[m].n));
+    const maxDn = Math.max(2, ...months.map((m) => cn[m]));
+    const plotH = H - top - bottom;
+    const scale = plotH / (maxUp + maxDn);
+    const base = top + maxUp * scale;
+    const bw = (W - padL - padR) / months.length;
+    const step = maxUp > 40 ? 20 : maxUp > 20 ? 10 : 5;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Bookings and cancellations by month">`;
+    for (let v = step; v <= maxUp; v += step) { const y = base - v * scale; svg += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${padL - 6}" y="${y + 4}" text-anchor="end">${v}</text>`; }
+    svg += `<line x1="${padL}" x2="${W - padR}" y1="${base}" y2="${base}" stroke="var(--muted)" stroke-width="1"/><text x="${padL - 6}" y="${base + 4}" text-anchor="end">0</text>`;
+    months.forEach((m, i) => {
+      const x = padL + i * bw + bw * 0.18, w = bw * 0.64;
+      const up = bk[m].n * scale, dn = cn[m] * scale;
+      const cats = Object.entries(bk[m].cats).map(([c, n]) => `${esc(c)}: ${n}`).join("<br>");
+      const tipTxt = `<b>${monthName(m)} ${m.slice(0, 4)}</b><br>Booked: ${bk[m].n} (${inr(bk[m].val)})${cats ? "<br>" + cats : ""}<br>Cancelled: ${cn[m]}<br>Net: ${bk[m].n - cn[m]}`;
+      if (up > 0) svg += `<path d="M${x},${base} v${-Math.max(up - 3, 0)} q0,-3 3,-3 h${w - 6} q3,0 3,3 v${Math.max(up - 3, 0)} z" fill="var(--s1)" data-tip="${esc(tipTxt)}"/>`;
+      if (dn > 0) svg += `<path d="M${x},${base + 2} v${Math.max(dn - 3, 0)} q0,3 3,3 h${w - 6} q3,0 3,-3 v${-Math.max(dn - 3, 0)} z" fill="var(--s8)" data-tip="${esc(tipTxt)}"/>`;
+      svg += `<rect x="${padL + i * bw}" y="${top}" width="${bw}" height="${plotH}" fill="transparent" data-tip="${esc(tipTxt)}"/>`;
+      if (i === 11 || bk[m].n === maxUp) svg += `<text class="lbl" x="${x + w / 2}" y="${base - up - 4}" text-anchor="middle">${bk[m].n}</text>`;
+      svg += `<text x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${monthName(m)}</text>`;
+    });
+    svg += `</svg>`;
+    $("monthChart").innerHTML = svg;
+
+    // inventory chart (horizontal stacked)
+    const rowH = 22, IW = 560, labW = 112, rightW = 40;
+    const maxT = Math.max(...inv.map((r) => r.sold + r.avail + r.hold + r.nofs));
+    const sc = (IW - labW - rightW) / maxT;
+    let isvg = `<svg viewBox="0 0 ${IW} ${inv.length * rowH + 6}" width="100%" role="img" aria-label="Inventory by tower">`;
+    inv.forEach((r, i) => {
+      const y = i * rowH + 4, tot = r.sold + r.avail + r.hold + r.nofs;
+      const cat = catBest[r.tower] ? catBest[r.tower].cat : "";
+      const tipTxt = `<b>Tower ${esc(r.tower)}</b>${cat ? " · " + esc(cat) : ""}<br>Sold ${r.sold} · Available ${r.avail}<br>On hold ${r.hold} · Not open ${r.nofs}<br>Available list value ${inr(r.availVal)}`;
+      isvg += `<text class="lbl" x="0" y="${y + 13}">T${esc(r.tower)}${cat ? ` <tspan fill="var(--muted)">${esc(cat.length > 10 ? cat.slice(0, 9) + "…" : cat)}</tspan>` : ""}</text>`;
+      let x = labW;
+      [["sold", "--s1"], ["avail", "--s3"], ["hold", "--s4"], ["nofs", "--nofs"]].forEach(([k, c]) => {
+        const w = r[k] * sc; if (w <= 0) return;
+        isvg += `<rect x="${x}" y="${y}" width="${Math.max(w - 2, 1.5)}" height="14" rx="2" fill="var(${c})" data-tip="${esc(tipTxt)}"/>`;
+        x += w;
+      });
+      isvg += `<text x="${IW}" y="${y + 12}" text-anchor="end">${r.avail ? r.avail + " left" : "sold out"}</text>`;
+    });
+    isvg += `</svg>`;
+    $("invChart").innerHTML = isvg;
+
+    $("recentTbl").innerHTML = `<table><thead><tr><th>Booked on</th><th>Tower</th><th>Unit</th><th>Category</th><th class="num">Consideration</th><th>Source</th></tr></thead><tbody>${
+      data.recent.map((r) => `<tr><td>${esc(fmtDay(String(r.booking_date).slice(0, 10)))}</td><td>${esc(r.tower)}</td><td>${esc(r.unit)}</td><td>${esc(r.cat || "—")}</td><td class="num">${inr(r.total_consideration)}</td><td>${esc(r.booking_agency || "—")}</td></tr>`).join("")
+    }</tbody></table>`;
+  }
+
+  // ---- COLLECTIONS ----
+  function renderColl() {
+    const e = sectionErr("coll");
+    if (!sectionReady("coll")) {
+      $("collKpis").innerHTML = e ? `<div class="state err">${esc(errText(e, DBSRV))}</div>` : `<div class="state">Loading collections…</div>`; return;
+    }
+    const f = data.fresh[0] || {};
+    const lagDays = f.last_receipt ? daysBetween(f.last_receipt, todayIST()) : null;
+    $("collAsof").className = "asof" + (lagDays > 3 ? " stale" : "");
+    $("collAsof").textContent = `Receipts up to ${fmtDay(String(f.last_receipt).slice(0, 10))} (uploaded ${fmtDT(f.coll_uploaded)}) · fetched ${fetchedAt("coll")}${e ? " · last refresh failed" : ""}`;
+
+    const m = data.collM;
+    const cur = m.find((r) => r.ym === todayIST().slice(0, 7));
+    const latest = m[0] || {}, prev = m[1] || {};
+    const totalUncl = m.reduce((a, r) => a + num(r.uncl_amt), 0), totalUnclN = m.reduce((a, r) => a + num(r.uncl_n), 0);
+    const days = data.collD;
+    const lastDay = days[days.length - 1] || {};
+    const kp = [];
+    kp.push({ k: `Collected in ${monthName(todayIST().slice(0, 7))}`, v: cur ? inr(cur.amt) : "₹0", d: cur ? `${cur.n} receipts` : "No receipts uploaded yet this month" });
+    if (latest.ym && (!cur || latest.ym !== cur.ym)) kp.push({ k: `Collected in ${monthName(latest.ym)}`, v: inr(latest.amt), d: `${latest.n} receipts${prev.ym ? ` · ${monthName(prev.ym)}: ${inr(prev.amt)}` : ""}` });
+    else if (prev.ym) kp.push({ k: `Collected in ${monthName(prev.ym)}`, v: inr(prev.amt), d: `${prev.n} receipts` });
+    kp.push({ k: `Latest day (${lastDay.d ? fmtDay(String(lastDay.d).slice(0, 10)) : "—"})`, v: inr(lastDay.amt), d: `${num(lastDay.n)} receipts` });
+    kp.push({ k: "Not yet cleared", v: inr(totalUncl), d: `${totalUnclN} receipts awaiting bank reconciliation` });
+    $("collKpis").innerHTML = kp.map((x) => `<div class="kpi"><div class="k">${esc(x.k)}</div><div class="v">${esc(x.v)}</div><div class="d">${esc(x.d)}</div></div>`).join("");
+
+    // daily bars
+    const W = 560, H = 200, padL = 46, padR = 6, top = 12, bottom = 26;
+    const maxA = Math.max(1, ...days.map((r) => num(r.amt)));
+    const niceStep = (() => { const raw = maxA / 4; const p = Math.pow(10, Math.floor(Math.log10(raw))); return [1, 2, 2.5, 5, 10].map((k) => k * p).find((s) => s >= raw); })();
+    const yMax = Math.ceil(maxA / niceStep) * niceStep;
+    const plotH = H - top - bottom, sc = plotH / yMax;
+    const n = Math.max(days.length, 1), bw = (W - padL - padR) / n;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Daily receipts">`;
+    for (let v = 0; v <= yMax + 1; v += niceStep) { const y = top + plotH - v * sc; s += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="${v ? "var(--line)" : "var(--muted)"}"/><text x="${padL - 6}" y="${y + 4}" text-anchor="end">${v ? inr(v).replace("₹", "") : "0"}</text>`; }
+    days.forEach((r, i) => {
+      const h = num(r.amt) * sc, x = padL + i * bw + bw * 0.15, w = Math.max(bw * 0.7, 2);
+      const d = String(r.d).slice(0, 10);
+      const tipTxt = `<b>${fmtDay(d)}</b><br>${inr(r.amt)} · ${r.n} receipts`;
+      if (h > 0) s += `<path d="M${x},${top + plotH} v${-Math.max(h - 2, 0)} q0,-2 2,-2 h${w - 4} q2,0 2,2 v${Math.max(h - 2, 0)} z" fill="${i === days.length - 1 ? "var(--gold)" : "var(--s1)"}" data-tip="${esc(tipTxt)}"/>`;
+      s += `<rect x="${padL + i * bw}" y="${top}" width="${bw}" height="${plotH}" fill="transparent" data-tip="${esc(tipTxt)}"/>`;
+      if (i % Math.ceil(n / 6) === 0 || i === days.length - 1) s += `<text x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${d.slice(8)}/${d.slice(5, 7)}</text>`;
+    });
+    s += `</svg>`;
+    $("dayChart").innerHTML = days.length ? s : `<div class="state">No receipts in the last 30 days of data.</div>`;
+
+    const un = data.collUn;
+    $("unclTbl").innerHTML = un.length ? `<table><thead><tr><th>Receipt date</th><th>Project</th><th>Unit</th><th class="num">Amount</th><th>Sale status</th></tr></thead><tbody>${
+      un.map((r) => `<tr><td>${esc(fmtDay(String(r.receipt_date).slice(0, 10)))}</td><td>${esc(String(r.project || "").replace("NEW KOLKATA - ", ""))}</td><td>${esc([r.building, r.unit].filter(Boolean).join(" / "))}</td><td class="num">${inr(r.cheque_amt)}</td><td>${esc(r.sale_status || "—")}</td></tr>`).join("")
+    }</tbody></table>` : `<div class="state">Every receipt is cleared.</div>`;
+  }
+
+  // ---- TICKETS ----
+  let tixFilter = "team";
+  function renderTix() {
+    const e = sectionErr("tix");
+    if (!sectionReady("tix")) {
+      $("tixTbl").innerHTML = e ? `<div class="state err">${esc(errText(e, DBSRV))}</div>` : `<div class="state">Loading tickets…</div>`;
+      $("tixKpis").innerHTML = ""; return;
+    }
+    const team = new Set(data.team.map((r) => r.Emp_Code).concat(SIR_CODES));
+    const now = nowIST();
+    const all = data.tickets.map((t) => {
+      const due = t.new_complete_date || t.complete_date;
+      const mine = team.has(t.solver_emp_code) || team.has(t.raiser_emp_code);
+      return { ...t, due, mine, over: due && String(due).slice(0, 16) < now, lateDays: due ? daysBetween(String(due), now) : 0 };
+    });
+    const list = tixFilter === "team" ? all.filter((t) => t.mine) : all;
+    const overAll = all.filter((t) => t.over).length;
+    const mineAll = all.filter((t) => t.mine);
+    $("tixKpis").innerHTML = [
+      { k: "Open company-wide", v: all.length, d: `${all.filter((t) => t.status === "Revision").length} in revision` },
+      { k: "Past agreed date", v: overAll, d: "company-wide" },
+      { k: "Involving sir's team", v: mineAll.length, d: `${mineAll.filter((t) => t.over).length} past agreed date` }
+    ].map((x) => `<div class="kpi"><div class="k">${esc(x.k)}</div><div class="v">${esc(x.v)}</div><div class="d">${esc(x.d)}</div></div>`).join("");
+    $("tixTbl").innerHTML = list.length ? `<table><thead><tr><th>#</th><th>Ticket</th><th>Raised by</th><th>Solver</th><th>Status</th><th>Agreed date</th><th class="num">Extensions</th></tr></thead><tbody>${
+      list.map((t) => `<tr><td class="num">${esc(t.id)}</td><td style="min-width:220px">${esc(t.task_name)}${t.mine && tixFilter === "all" ? ' <span class="pill">Sir\'s team</span>' : ""}</td><td>${esc(t.raiser_name)}</td><td>${esc(t.solver_name)}</td>
+        <td><span class="pill"><i class="dot" style="background:${t.status === "Revision" ? "var(--warn)" : "var(--s1)"}"></i>${esc(t.status)}</span></td>
+        <td style="white-space:nowrap">${esc(fmtDT(t.due))}${t.over ? `<br><span class="late">⚠ ${t.lateDays} days late</span>` : ""}</td><td class="num">${num(t.extension_count)}</td></tr>`).join("")
+    }</tbody></table>` : `<div class="state">${tixFilter === "team" ? "No open tickets raised by or assigned to sir's team." : "No open tickets."}</div>`;
+  }
+  function setTix(f) { tixFilter = f; $("tixTeam").setAttribute("aria-pressed", f === "team"); $("tixAll").setAttribute("aria-pressed", f === "all"); renderTix(); }
+  $("tixTeam").addEventListener("click", () => setTix("team"));
+  $("tixAll").addEventListener("click", () => setTix("all"));
+
+  // ---- CALENDAR ----
+  let calDay = "today", calUnsub = null, calEvents = null, calErr = null, calStamp = null;
+  function calRange() {
+    const d = calDay === "today" ? todayIST() : addDays(todayIST(), 1);
+    return { d, start: d + "T00:00:00+05:30", end: addDays(d, 1) + "T00:00:00+05:30" };
+  }
+  function watchCal() {
+    if (calUnsub) calUnsub();
+    calEvents = null; calErr = null; renderCal();
+    const r = calRange();
+    calUnsub = mcp.watchTool(CALSRV, "list_events", { calendarId: CAL_ID, startTime: r.start, endTime: r.end, orderBy: "startTime", pageSize: 50, timeZone: "Asia/Kolkata" }, (ev) => {
+      if (ev.type === "data") { calEvents = (ev.result.payload && ev.result.payload.events) || []; calErr = null; calStamp = ev.result.cache ? ev.result.cache.storedAt : Date.now(); }
+      else { calErr = ev.error; if (["needs_reauth", "server_not_connected", "blocked_by_policy", "not_in_manifest", "consent_required"].includes(ev.error && ev.error.code)) calEvents = null; }
+      renderCal();
+    }, { cache: { staleTime: 60000, gcTime: 6 * 3600000 }, refetchInterval: 5 * 60000 });
+  }
+  function renderCal() {
+    const r = calRange();
+    if (!calEvents) {
+      $("calBody").innerHTML = calErr ? `<div class="state err">${esc(errText(calErr, CALSRV))}${calErr.code === "server_not_connected" || calErr.code === "tool_error" ? " Sir's calendar must be shared with your Google account." : ""}</div>` : `<div class="state">Loading sir's calendar…</div>`;
+      return;
+    }
+    const now = nowIST();
+    const evs = calEvents.filter((e) => e.status !== "cancelled" && e.eventType !== "WORKING_LOCATION");
+    if (!evs.length) { $("calBody").innerHTML = `<div class="state">Nothing on sir's calendar for ${esc(fmtDay(r.d))}.</div>`; }
+    else {
+      $("calBody").innerHTML = evs.map((e) => {
+        const allDay = !(e.start && e.start.dateTime);
+        const s = allDay ? "" : e.start.dateTime.slice(0, 16), en = allDay ? "" : e.end.dateTime.slice(0, 16);
+        const cls = !allDay && r.d === todayIST() ? (now >= s && now < en ? "now" : now >= en ? "past" : "") : "";
+        const ppl = (e.attendees || []).filter((a) => !/fireflies\.ai$/i.test(a.email || "")).length;
+        const link = e.conferenceUrl || (e.conferenceData && e.conferenceData.videoEntryPoint && e.conferenceData.videoEntryPoint.uri);
+        return `<div class="ev ${cls}"><div class="t">${allDay ? "All day" : s.slice(11)}${allDay ? "" : `<small>to ${en.slice(11)}</small>`}</div>
+          <div style="min-width:0"><div class="title">${esc(e.summary || "(No title)")}${cls === "now" ? ' <span class="pill"><i class="dot" style="background:var(--gold)"></i>Now</span>' : ""}</div>
+          <div class="meta">${e.description ? `<span>${esc(String(e.description).replace(/<[^>]+>/g, " ").slice(0, 90))}</span>` : ""}${e.location ? `<span>At ${esc(e.location)}</span>` : ""}${ppl ? `<span>${ppl} people</span>` : ""}${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">Join Meet</a>` : ""}${e.htmlLink ? `<a href="${esc(e.htmlLink)}" target="_blank" rel="noopener">Open</a>` : ""}</div></div></div>`;
+      }).join("");
+    }
+    $("calAsof").textContent = `${evs.length} event${evs.length === 1 ? "" : "s"} on ${fmtDay(r.d)} · updated ${calStamp ? new Date(calStamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) : ""}${calErr ? " · last refresh failed" : ""}`;
+  }
+  function setDay(d) { calDay = d; $("dayToday").setAttribute("aria-pressed", d === "today"); $("dayTomorrow").setAttribute("aria-pressed", d === "tomorrow"); if (mcp) watchCal(); }
+  $("dayToday").addEventListener("click", () => setDay("today"));
+  $("dayTomorrow").addEventListener("click", () => setDay("tomorrow"));
+
+  // ---- REMINDERS (shared db) ----
+  let db = null, rems = [], canWrite = true, armedDelete = null;
+  $("remDue").value = todayIST();
+  function renderRem() {
+    const today = todayIST();
+    const open = rems.filter((r) => !r.done).sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
+    const doneToday = rems.filter((r) => r.done && (r.doneAt || "").slice(0, 10) === today);
+    const over = open.filter((r) => r.due && r.due < today), dueToday = open.filter((r) => r.due === today), later = open.filter((r) => !r.due || r.due > today);
+    $("remCount").textContent = `${over.length} overdue · ${dueToday.length} today · ${later.length} upcoming`;
+    const item = (r) => `<div class="rem ${r.done ? "done" : ""}" data-id="${esc(r.id)}">
+      <input type="checkbox" id="chk-${esc(r.id)}" ${r.done ? "checked" : ""} ${canWrite ? "" : "disabled"} aria-label="Mark done">
+      <label class="txt" for="chk-${esc(r.id)}">${esc(r.text)}</label>
+      <span class="due ${r.due && r.due < today && !r.done ? "over" : ""}">${r.due ? (r.due === today ? "Today" : fmtDay(r.due)) : "No date"}</span>
+      ${canWrite ? `<button type="button" class="del ${armedDelete === r.id ? "confirm" : ""}" aria-label="Delete reminder">${armedDelete === r.id ? "Delete?" : "×"}</button>` : "<span></span>"}</div>`;
+    const group = (title, arr) => arr.length ? `<div class="rem-group"><h3 style="margin-top:8px">${title}</h3>${arr.map(item).join("")}</div>` : "";
+    const html = group("Overdue", over) + group("Today", dueToday) + group("Upcoming", later) + group("Done today", doneToday);
+    $("remBody").innerHTML = html || `<div class="state">No reminders yet. Add one above: it is saved here for both you and sir.</div>`;
+  }
+  $("remBody").addEventListener("click", async (e) => {
+    const row = e.target.closest(".rem"); if (!row || !db) return;
+    const id = row.getAttribute("data-id");
+    if (e.target.matches("input[type=checkbox]")) {
+      const done = e.target.checked;
+      try { await db.collection("reminders").doc(id).update({ done, doneAt: done ? nowIST() : "" }); }
+      catch (err) { e.target.checked = !done; remWriteFailed(err); }
+    } else if (e.target.closest(".del")) {
+      if (armedDelete !== id) { armedDelete = id; renderRem(); return; }
+      armedDelete = null;
+      try { await db.collection("reminders").doc(id).delete(); } catch (err) { remWriteFailed(err); }
+    }
+  });
+  function remWriteFailed(err) {
+    if (err && err.code === "invalid_argument") { canWrite = false; $("remForm").hidden = true; renderRem(); }
+    $("remCount").textContent = err && err.code === "quota_exceeded" ? "Reminder storage is full. Delete old reminders to add new ones." : "Couldn't save that change. Try again.";
+  }
+  $("remForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = $("remText").value.trim(); if (!text || !db) return;
+    $("remAdd").disabled = true;
+    try {
+      await db.collection("reminders").add({ text, due: $("remDue").value || "", done: false, doneAt: "", createdAt: nowIST() });
+      $("remText").value = "";
+    } catch (err) { remWriteFailed(err); }
+    $("remAdd").disabled = false;
+  });
+
+  // ---- boot ----
+  bindTips($("monthChart")); bindTips($("invChart")); bindTips($("dayChart"));
+  $("refreshAll").addEventListener("click", async () => {
+    if (!mcp) return;
+    $("refreshAll").disabled = true;
+    try { await mcp.invalidate(); } catch (_) {}
+    $("refreshAll").disabled = false;
+  });
+
+  (async () => {
+    const c = window.claude;
+    if (!c || !c.use) {
+      ["salesKpis", "collKpis", "tixTbl", "calBody", "remBody"].forEach((id) => { $(id).innerHTML = `<div class="state">Open this dashboard on claude.ai to load live data.</div>`; });
+      return;
+    }
+    c.use("db").then(async (d) => {
+      db = d;
+      if (!db) { $("remForm").hidden = true; $("remBody").innerHTML = `<div class="state">Reminders aren't available in this view. Sign in to claude.ai to see them.</div>`; return; }
+      try { const u = await c.use("user"); const w = u && u.can ? await u.can("data.write") : null; if (w === false) { canWrite = false; $("remForm").hidden = true; } } catch (_) {}
+      db.collection("reminders").onSnapshot((snap) => {
+        rems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderRem();
+      }, (err) => { $("remBody").innerHTML = `<div class="state err">Reminders stopped syncing (${esc(err.code)}). Reload the page.</div>`; });
+    });
+    mcp = await c.use("mcp");
+    if (!mcp) {
+      const msg = `<div class="state">Live data isn't available in this view. Open the dashboard on claude.ai while signed in.</div>`;
+      ["salesKpis", "collKpis", "tixTbl", "calBody"].forEach((id) => { $(id).innerHTML = msg; });
+      return;
+    }
+    Object.keys(SQL).forEach(watchSql);
+    watchCal();
+    setInterval(() => { renderCal(); renderRem(); }, 60000);
+  })();
+})();
+</script>
