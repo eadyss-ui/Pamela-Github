@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BOQ Estimation Dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --border: rgba(11,11,11,0.10);
+  --s-done: #2a78d6;
+  --s-pend: #eb6834;
+  --s-canc: #c3c2b7;
+  --good: #0ca30c;
+  --warn: #fab219;
+  --crit: #d03b3b;
+  --good-text: #006300;
+  --crit-text: #b02a2a;
+  --chip: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+    --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+    --s-done: #3987e5; --s-pend: #d95926; --s-canc: #4a4a46;
+    --good-text: #0ca30c; --crit-text: #e66767; --chip: #2c2c2a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
+  --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+  --s-done: #3987e5; --s-pend: #d95926; --s-canc: #4a4a46;
+  --good-text: #0ca30c; --crit-text: #e66767; --chip: #2c2c2a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 4px; }
+.sub { color: var(--ink-2); margin: 0; }
+.note { color: var(--muted); font-size: 12px; margin: 4px 0 12px; }
+button.theme {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; margin-top: 16px;
+}
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 20px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.tile .k { color: var(--ink-2); font-size: 12px; }
+.tile .v { font-size: 28px; font-weight: 600; margin-top: 2px; }
+.tile .d { color: var(--muted); font-size: 12px; }
+.alert { border-left: 4px solid var(--crit); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--grid); padding: 8px; white-space: nowrap; }
+td { border-bottom: 1px solid var(--grid); padding: 8px; vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.ref td { color: var(--ink-2); }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--ink-2); font-size: 12px; margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.bars { display: grid; grid-template-columns: minmax(120px, 210px) 1fr 44px; gap: 8px 10px; align-items: center; }
+.bars .lbl { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars .tot { font-size: 12px; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+.track { display: flex; gap: 2px; height: 18px; }
+.seg { height: 100%; min-width: 3px; cursor: default; }
+.seg:first-child { border-radius: 4px 0 0 4px; }
+.seg:last-child { border-radius: 0 4px 4px 0; }
+.seg:only-child { border-radius: 4px; }
+.seg:hover { filter: brightness(1.12); }
+.tip {
+  position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none; max-width: 260px;
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid2 > .card { margin-top: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.over { color: var(--crit-text); font-weight: 600; }
+.small { font-size: 12px; color: var(--muted); }
+ul.actions { margin: 6px 0 0; padding-left: 18px; }
+ul.actions li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>FMS BOQ &amp; Estimation: Rollout Readiness</h1>
+      <p class="sub">7 projects to go live, compared with the live reference projects (New Kolkata Sangam &amp; Triveni)</p>
+      <p class="note">Snapshot: 7 Oct 2026, ~15:00 · Source: intrasite DB <code>fms_boq_estimation_26</code> (tasks, task_updates, boq_est_dropdown)</p>
+    </div>
+    <button class="theme" id="themeBtn" type="button">Toggle theme</button>
+  </header>
+
+  <section class="tiles" id="tiles"></section>
+
+  <section class="card">
+    <h2>Go-live readiness: the 7 projects</h2>
+    <p class="note">"Construction BOQ" = estimation tasks under the project's own name. "IT" = tasks under the "IT …" project names, which run without a QS Maker/Checker (recorded as NA).</p>
+    <div class="scroll"><table id="readiness"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Tasks by project and status</h2>
+    <p class="note">All tasks in the BOQ Estimation FMS, excluding 1 test task and 1 task with no project. Hover a segment for details.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--s-done)"></i>Completed</span>
+      <span><i class="sw" style="background:var(--s-pend)"></i>Pending</span>
+      <span><i class="sw" style="background:var(--s-canc)"></i>Canceled</span>
+    </div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>QS Maker → Checker pairs in use</h2>
+      <p class="note">The reference format: who makes and who checks estimates on projects already live.</p>
+      <div class="scroll"><table id="pairs"></table></div>
+    </section>
+    <section class="card">
+      <h2>Before go-live: actions from the email</h2>
+      <ul class="actions" id="actions"></ul>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Pending tasks</h2>
+    <p class="note">Sorted by planned end. "Overdue" = planned end is before the snapshot time and the task is still pending.</p>
+    <div class="scroll"><table id="pending"></table></div>
+  </section>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const SNAP = new Date('2026-10-07T15:00:00');
+
+// Task counts by project (system name) and status
+const STATUS = [
+  { p: 'NEW KOLKATA - SANGAM',      done: 108, pend: 20, canc: 10, boqDone: 25897779.90 },
+  { p: 'NEW KOLKATA - TRIVENI',     done: 32,  pend: 0,  canc: 3,  boqDone: 26837040.47 },
+  { p: 'NEW KOLKATA TRIVENI - CAM', done: 13,  pend: 5,  canc: 0,  boqDone: 0 },
+  { p: 'IT NEW KOLKATA - SANGAM',   done: 13,  pend: 0,  canc: 1,  boqDone: 719868.68 },
+  { p: 'IT ALCOVE DUETS',           done: 9,   pend: 0,  canc: 2,  boqDone: 376034.26 },
+  { p: 'IT THE CURVE',              done: 10,  pend: 0,  canc: 1,  boqDone: 226194.78 },
+  { p: 'THE CURVE',                 done: 4,   pend: 0,  canc: 3,  boqDone: 6394882.48 },
+  { p: 'IT ALL LOT SUNDARVAN',      done: 4,   pend: 0,  canc: 1,  boqDone: 205467.00 },
+  { p: 'IT ALCOVE LUXURIA',         done: 4,   pend: 0,  canc: 0,  boqDone: 450347.00 }
+];
+
+// The 7 go-live projects from the email, mapped to system project names
+const GOLIVE = [
+  { name: 'North Block',       con: null,        it: null },
+  { name: 'The Curve',         con: 'THE CURVE', it: 'IT THE CURVE' },
+  { name: 'Alcove Duets',      con: null,        it: 'IT ALCOVE DUETS' },
+  { name: 'Alcove Luxuria',    con: null,        it: 'IT ALCOVE LUXURIA' },
+  { name: 'Alcove Crown',      con: null,        it: null },
+  { name: 'Alcove Estate',     con: null,        it: null },
+  { name: 'All Lot Sundarban', con: null,        it: 'IT ALL LOT SUNDARVAN' }
+];
+const REFS = [
+  { name: 'New Kolkata Sangam (reference)',  con: 'NEW KOLKATA - SANGAM',  it: 'IT NEW KOLKATA - SANGAM' },
+  { name: 'New Kolkata Triveni (reference)', con: 'NEW KOLKATA - TRIVENI', it: null }
+];
+
+// QS Maker -> Checker pairs (construction BOQ projects only)
+const PAIRS = [
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Dinkar Kumar',        c: 'Sandip Kumar Das',    n: 39, done: 36, pend: 1 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Sandip Kumar Das',    c: 'Sayantan Ghosh',      n: 32, done: 29, pend: 1 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Sandip Kumar Das',    c: 'Tanmoy Mondal',       n: 28, done: 21, pend: 7 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Pravat Kumar Sahoo',  c: 'Sandip Kumar Das',    n: 10, done: 8,  pend: 0 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Dibeyendu Choudhury', c: 'Gourab Chakraborty',  n: 9,  done: 8,  pend: 1 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Gourab Chakraborty',  c: 'Sandip Kumar Das',    n: 7,  done: 0,  pend: 7 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Sanjoy Kumar Ghosh',  c: 'Sandip Kumar Das',    n: 6,  done: 3,  pend: 1 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Atriz Roy',           c: 'Ashish Agarwal',      n: 4,  done: 1,  pend: 1 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Sandip Kumar Das',    c: 'Pabitra Sekhar Jana', n: 2,  done: 2,  pend: 0 },
+  { p: 'NEW KOLKATA - SANGAM',  m: 'Goutam Tarafdar',     c: 'YSS Sir',             n: 1,  done: 0,  pend: 1 },
+  { p: 'NEW KOLKATA - TRIVENI', m: 'Sandip Kumar Das',    c: 'Tanmoy Mondal',       n: 18, done: 16, pend: 0 },
+  { p: 'NEW KOLKATA - TRIVENI', m: 'Dinkar Kumar',        c: 'Sandip Kumar Das',    n: 8,  done: 8,  pend: 0 },
+  { p: 'NEW KOLKATA - TRIVENI', m: 'Pravat Kumar Sahoo',  c: 'Sandip Kumar Das',    n: 6,  done: 6,  pend: 0 },
+  { p: 'NEW KOLKATA - TRIVENI', m: 'Sanjoy Kumar Ghosh',  c: 'Sandip Kumar Das',    n: 3,  done: 2,  pend: 0 },
+  { p: 'THE CURVE',             m: 'Abhishek Dutta',      c: 'Sandip Kumar Das',    n: 4,  done: 2,  pend: 0 },
+  { p: 'THE CURVE',             m: 'Abhishek Dutta',      c: 'YSS Sir',             n: 3,  done: 2,  pend: 0 }
+];
+
+// Pending tasks
+const PENDING = [
+  [6,   'NEW KOLKATA - SANGAM',      'BP3',  'Carpentry - Wall Panelling',  null,       '2026-08-24T12:47', 'Sandip Kumar Das',    'Sayantan Ghosh'],
+  [10,  'NEW KOLKATA - SANGAM',      'BP3',  'MS Hand Railing',             null,       '2026-08-26T12:42', 'Dinkar Kumar',        'Sandip Kumar Das'],
+  [136, 'NEW KOLKATA TRIVENI - CAM', 'TMP2', 'Equipment Tools and Maintenance', 130002, '2026-09-12T15:25', '—', '—'],
+  [144, 'NEW KOLKATA TRIVENI - CAM', 'BP1',  'Equipment Tools and Maintenance', null,   '2026-09-12T17:54', '—', '—'],
+  [178, 'NEW KOLKATA TRIVENI - CAM', 'BP1',  'Equipment Tools and Maintenance', null,   '2026-09-22T11:51', '—', '—'],
+  [177, 'NEW KOLKATA TRIVENI - CAM', 'TMP2', 'Facility Maintenance Expenses',   null,   '2026-10-05T13:00', '—', '—'],
+  [231, 'NEW KOLKATA TRIVENI - CAM', 'TMP2', 'Facility Maintenance Expenses',   null,   '2026-10-05T13:04', '—', '—'],
+  [237, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             76312.05,   '2026-10-06T13:55', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [238, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             76312.05,   '2026-10-06T13:56', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [242, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             76312.05,   '2026-10-06T13:57', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [241, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             76312.05,   '2026-10-06T13:57', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [240, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             76312.05,   '2026-10-06T13:57', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [239, 'NEW KOLKATA - SANGAM',      'BP1',  'Super Structure',             83039.68,   '2026-10-06T13:57', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [107, 'NEW KOLKATA - SANGAM',      'BP6',  'Admin OH (Incl. HO Fixed Assets Depreciation)', 1298666, '2026-10-06T18:00', 'Atriz Roy', 'Ashish Agarwal'],
+  [263, 'NEW KOLKATA - SANGAM',      'BP1',  'Equipment (Only Construction)', 172760.76, '2026-10-07T17:26', 'Dibeyendu Choudhury', 'Gourab Chakraborty'],
+  [267, 'NEW KOLKATA - SANGAM',      'BP4',  'External Plumbing & Drainage', null,      '2026-10-08T13:17', 'Sanjoy Kumar Ghosh',  'Sandip Kumar Das'],
+  [152, 'NEW KOLKATA - SANGAM',      'BP5',  'Electrical',                  4824.05,    '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [151, 'NEW KOLKATA - SANGAM',      'BP5',  'Electrical',                  77308.02,   '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [150, 'NEW KOLKATA - SANGAM',      'BP5',  'Electrical',                  100637.08,  '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [147, 'NEW KOLKATA - SANGAM',      'BP5',  'Fire Fighting - FDA',         51907.04,   '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [115, 'NEW KOLKATA - SANGAM',      'BP5',  'ELV',                         274125.80,  '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [266, 'NEW KOLKATA - SANGAM',      'BP5',  'Electrical',                  44154.88,   '2026-10-08T13:47', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [248, 'NEW KOLKATA - SANGAM',      'BP1',  'Masonry & Plaster',           551092.22,  '2026-10-08T14:14', 'Sandip Kumar Das',    'Tanmoy Mondal'],
+  [268, 'NEW KOLKATA - SANGAM',      'BP4',  'AC',                          null,       '2026-10-08T14:55', 'Gourab Chakraborty',  'Sandip Kumar Das'],
+  [14,  'NEW KOLKATA - SANGAM',      'A1',   'Marketing',                   7245000,    '2026-10-09T14:24', 'Goutam Tarafdar',     'YSS Sir']
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const byName = Object.fromEntries(STATUS.map(s => [s.p, s]));
+function inr(v) {
+  if (v == null || v === 0) return '—';
+  if (v >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+  if (v >= 1e5) return '₹' + (v / 1e5).toFixed(2) + ' L';
+  return '₹' + Math.round(v).toLocaleString('en-IN');
+}
+const fmtDate = s => new Date(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+// Tiles
+const tot = STATUS.reduce((a, s) => ({ done: a.done + s.done, pend: a.pend + s.pend, canc: a.canc + s.canc, boq: a.boq + s.boqDone }), { done: 0, pend: 0, canc: 0, boq: 0 });
+const overdue = PENDING.filter(r => new Date(r[5]) < SNAP).length;
+const ready = GOLIVE.filter(g => g.con && PAIRS.some(p => p.p === g.con)).length;
+$('tiles').innerHTML = [
+  { k: 'Go-live projects with QS Maker/Checker in use', v: ready + ' of 7', d: 'Only The Curve so far', cls: 'alert' },
+  { k: 'Tasks in BOQ Estimation FMS', v: tot.done + tot.pend + tot.canc, d: `${tot.done} completed · ${tot.canc} canceled` },
+  { k: 'Pending tasks', v: tot.pend, d: 'All in New Kolkata projects' },
+  { k: 'Pending past planned end', v: overdue, d: `of ${tot.pend} pending`, cls: overdue ? 'alert' : '' },
+  { k: 'BOQ value of completed tasks', v: inr(tot.boq), d: 'Sum of boq_value' }
+].map(t => `<div class="tile ${t.cls || ''}"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="d">${t.d}</div></div>`).join('');
+
+// Readiness table
+function counts(name) {
+  const s = name && byName[name];
+  return s ? { n: s.done + s.pend + s.canc, done: s.done, boq: s.boqDone } : { n: 0, done: 0, boq: 0 };
+}
+function row(g, isRef) {
+  const c = counts(g.con), i = counts(g.it);
+  const pairs = PAIRS.filter(p => p.p === g.con);
+  const makers = [...new Set(pairs.map(p => p.m))], checkers = [...new Set(pairs.map(p => p.c))];
+  let badge;
+  if (isRef) badge = `<span class="badge"><i class="dot" style="background:var(--good)"></i>Live</span>`;
+  else if (pairs.length) badge = `<span class="badge"><i class="dot" style="background:var(--warn)"></i>Partly set up, confirm list</span>`;
+  else badge = `<span class="badge"><i class="dot" style="background:var(--crit)"></i>QS list needed</span>`;
+  return `<tr class="${isRef ? 'ref' : ''}">
+    <td><strong>${esc(g.name)}</strong></td><td>${badge}</td>
+    <td class="num">${c.n || '—'}</td><td class="num">${c.n ? c.done : '—'}</td><td class="num">${inr(c.boq)}</td>
+    <td>${makers.length ? esc(makers.join(', ')) : '<span class="small">none</span>'}</td>
+    <td>${checkers.length ? esc(checkers.join(', ')) : '<span class="small">none</span>'}</td>
+    <td class="num">${i.n || '—'}</td></tr>`;
+}
+$('readiness').innerHTML = `<thead><tr><th>Project</th><th>Status</th><th class="num">Construction BOQ tasks</th><th class="num">Completed</th><th class="num">Completed BOQ value</th><th>QS Makers</th><th>QS Checkers</th><th class="num">IT tasks</th></tr></thead>
+<tbody>${GOLIVE.map(g => row(g, false)).join('')}${REFS.map(g => row(g, true)).join('')}</tbody>`;
+
+// Stacked bars
+const max = Math.max(...STATUS.map(s => s.done + s.pend + s.canc));
+const tip = $('tip');
+$('bars').innerHTML = STATUS.map((s, idx) => {
+  const t = s.done + s.pend + s.canc;
+  const seg = (k, v, color, label) => v ? `<div class="seg" style="width:${v / max * 100}%;background:var(${color})" data-i="${idx}" data-k="${label}" data-v="${v}"></div>` : '';
+  return `<div class="lbl" title="${esc(s.p)}">${esc(s.p)}</div>
+    <div class="track">${seg('done', s.done, '--s-done', 'Completed')}${seg('pend', s.pend, '--s-pend', 'Pending')}${seg('canc', s.canc, '--s-canc', 'Canceled')}</div>
+    <div class="tot">${t}</div>`;
+}).join('');
+$('bars').addEventListener('mousemove', e => {
+  const el = e.target.closest('.seg');
+  if (!el) { tip.style.display = 'none'; return; }
+  const s = STATUS[el.dataset.i], t = s.done + s.pend + s.canc;
+  tip.innerHTML = `<strong>${esc(s.p)}</strong><br>${el.dataset.k}: ${el.dataset.v} of ${t} (${Math.round(el.dataset.v / t * 100)}%)`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX + 12, innerWidth - 270) + 'px';
+  tip.style.top = (e.clientY + 12) + 'px';
+});
+$('bars').addEventListener('mouseleave', () => tip.style.display = 'none');
+
+// Pairs table
+$('pairs').innerHTML = `<thead><tr><th>Project</th><th>QS Maker</th><th>QS Checker</th><th class="num">Tasks</th><th class="num">Done</th><th class="num">Pending</th></tr></thead>
+<tbody>${PAIRS.map(p => `<tr><td>${esc(p.p)}</td><td>${esc(p.m)}</td><td>${esc(p.c)}</td><td class="num">${p.n}</td><td class="num">${p.done}</td><td class="num">${p.pend}</td></tr>`).join('')}</tbody>`;
+
+// Actions
+const missing = GOLIVE.filter(g => !PAIRS.some(p => p.p === g.con)).map(g => g.name);
+$('actions').innerHTML = [
+  `<strong>QS Maker &amp; Checker list needed</strong> for ${missing.length} projects with no construction BOQ tasks yet: ${esc(missing.join(', '))}.`,
+  `<strong>The Curve</strong> already uses Abhishek Dutta (maker) with Sandip Kumar Das / YSS Sir (checkers). Confirm this is the final list.`,
+  `<strong>Name mismatch:</strong> the system spells it "SUNDARVAN" while the email says "Sundarban". Use one spelling when setting up the project.`,
+  `<strong>Disable the BOQ Task Generation link</strong> in the old system now so no new old-style tasks are created.`,
+  `<strong>Delete old data</strong> that was not part of the Estimation process once the projects go live (Management directive).`,
+  `<strong>Clear ${overdue} overdue pending tasks</strong> (listed below) so they don't carry over as old/pending items.`
+].map(x => `<li>${x}</li>`).join('');
+
+// Pending table
+$('pending').innerHTML = `<thead><tr><th>Task</th><th>Project</th><th>Stage</th><th>Budget head</th><th class="num">BOQ value</th><th>Planned end</th><th>QS Maker</th><th>QS Checker</th></tr></thead>
+<tbody>${PENDING.map(r => {
+  const late = new Date(r[5]) < SNAP;
+  const days = Math.floor((SNAP - new Date(r[5])) / 864e5);
+  return `<tr><td>#${r[0]}</td><td>${esc(r[1])}</td><td>${r[2]}</td><td>${esc(r[3])}</td><td class="num">${inr(r[4])}</td>
+    <td>${fmtDate(r[5])}${late ? `<br><span class="over">⚠ Overdue${days ? ' ' + days + 'd' : ''}</span>` : ''}</td>
+    <td>${esc(r[6])}</td><td>${esc(r[7])}</td></tr>`;
+}).join('')}</tbody>`;
+
+// Theme toggle
+$('themeBtn').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+});
+</script>
+</body>
+</html>
